@@ -1,0 +1,16 @@
+name = "lintcode"
+main = "worker.js"
+compatibility_date = "2025-11-25"
+
+[assets]
+directory = "."
+exclude = [
+  "**/*.py",
+  "todo.md",
+  "wrangler.toml",
+  "worker.js",
+  "package.json",
+  "package-lock.json",
+  "README.md",
+  "**/.git/**"
+]

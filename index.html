@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LintCode Problems Viewer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #1f2933;
+        }
+        .container { max-width: 1440px; margin: 0 auto; }
+        h1 { margin: 0 0 16px; font-size: 28px; font-weight: 700; }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .search-box {
+            flex: 1 1 260px;
+            min-width: 220px;
+            padding: 10px 12px;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: #fff;
+        }
+        .clear-button {
+            padding: 10px 14px;
+            background-color: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            color: #1d4ed8;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .clear-button:hover { background-color: #dbeafe; }
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .filter-group {
+            background-color: #fff;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+        }
+        .filter-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #475569;
+        }
+        .filter-options {
+            max-height: 220px;
+            overflow-y: auto;
+            border-top: 1px solid #eef2f6;
+            padding-top: 8px;
+        }
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            padding: 4px 2px;
+            color: #1f2933;
+        }
+        .filter-option input { accent-color: #2563eb; }
+        .filter-empty {
+            font-size: 13px;
+            color: #6b7280;
+            padding: 4px 0;
+        }
+        .layout { display: grid; gap: 24px; }
+        .problem-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 10px;
+        }
+        .problem-item {
+            cursor: pointer;
+            padding: 16px;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+            transition: transform 0.16s ease, box-shadow 0.16s ease;
+        }
+        .problem-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
+        }
+        .problem-item.selected {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+        }
+        .problem-title { font-weight: 600; font-size: 16px; margin-bottom: 8px; }
+        .problem-meta { font-size: 13px; color: #475569; display: flex; gap: 12px; flex-wrap: wrap; }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge.easy { background-color: #dcfce7; color: #166534; }
+        .badge.medium { background-color: #fef3c7; color: #92400e; }
+        .badge.hard { background-color: #fee2e2; color: #b91c1c; }
+        .details {
+            margin-top: 24px;
+            padding: 28px;
+            border: 1px solid #d0d7de;
+            border-radius: 16px;
+            background-color: #fff;
+            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .hidden { display: none; }
+        pre {
+            white-space: pre-wrap;
+            background-color: #f8fafc;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        pre code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        }
+        .details h2 { margin-top: 0; font-size: 22px; color: #1d4ed8; }
+        .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+        .tag {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+        }
+        .section { margin: 24px 0 0; }
+        .section-title {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .empty-state {
+            padding: 20px;
+            background-color: #fff;
+            border: 1px dashed #cbd5f5;
+            border-radius: 8px;
+            text-align: center;
+            color: #64748b;
+        }
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 12px;
+        }
+        .detail-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .detail-subtitle {
+            font-size: 14px;
+            color: #64748b;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .detail-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .detail-stat {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            min-width: 120px;
+        }
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .detail-tabs {
+            display: flex;
+            gap: 18px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+            margin-top: -12px;
+        }
+        .detail-tab {
+            font-size: 14px;
+            color: #64748b;
+            padding-bottom: 8px;
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+        }
+        .detail-tab.active {
+            color: #2563eb;
+            border-color: #2563eb;
+        }
+        .section-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 18px 20px;
+            background-color: #fbfdff;
+        }
+        .section-card h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .section-card p { margin: 6px 0; line-height: 1.6; }
+        .section-card ul,
+        .section-card ol {
+            padding-left: 20px;
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        .section-card blockquote {
+            border-left: 4px solid #cbd5f5;
+            background-color: #f8fafc;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 6px;
+            color: #475569;
+        }
+        .section-card blockquote p {
+            margin: 0;
+            line-height: 1.6;
+        }
+        .example-card {
+            background: linear-gradient(135deg, rgba(59,130,246,0.05), rgba(191,219,254,0.2));
+            border-color: #bfdbfe;
+        }
+        .info-card {
+            border-color: #bae6fd;
+            background: #e0f2fe;
+        }
+        .info-layout {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .info-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #2563eb;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .info-text p { margin: 4px 0; }
+        .chip-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .chip {
+            padding: 6px 12px;
+            border-radius: 999px;
+            background-color: #e0f2fe;
+            color: #0369a1;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .course-card {
+            border: 1px solid #cbd5f5;
+            border-radius: 12px;
+            padding: 12px 14px;
+            background-color: #f8fafc;
+            margin-bottom: 10px;
+        }
+        .course-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: #0f172a;
+        }
+        .course-highlight { font-size: 13px; color: #475569; }
+        .related-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .related-item {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #dbeafe;
+            background: #eff6ff;
+            min-width: 180px;
+        }
+        .related-item a {
+            color: #1d4ed8;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .related-item span { font-size: 12px; color: #475569; }
+        .meta-group { display: flex; flex-wrap: wrap; gap: 18px; }
+        @media (min-width: 900px) {
+            .layout { grid-template-columns: 420px 1fr; }
+            .problem-list { max-height: calc(100vh - 260px); overflow-y: auto; padding-right: 4px; }
+            .details { margin-top: 0; position: sticky; top: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LintCode Locked Problems</h1>
+        <div class="toolbar">
+            <input type="text" id="search" class="search-box" placeholder="Search title, company, or tag">
+            <button type="button" id="clear-filters" class="clear-button">Reset Filters</button>
+            <div style="color: #475569; font-size: 14px;">Total: <span id="count">0</span> problems</div>
+        </div>
+        <div class="filters">
+            <div class="filter-group">
+                <div class="filter-title">Company Tags</div>
+                <div id="company-filter-options" class="filter-options"></div>
+            </div>
+            <div class="filter-group">
+                <div class="filter-title">Problem Tags</div>
+                <div id="problem-filter-options" class="filter-options"></div>
+            </div>
+        </div>
+        <div class="layout">
+            <ul id="problem-list" class="problem-list"></ul>
+            <div id="details" class="details hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        let allProblems = [];
+        let problems = [];
+        let searchTerm = '';
+        const activeCompanyFilters = new Set();
+        const activeTagFilters = new Set();
+        let companyOptions = [];
+        let problemTagOptions = [];
+
+        const searchInput = document.getElementById('search');
+        const clearFiltersButton = document.getElementById('clear-filters');
+        const companyFilterContainer = document.getElementById('company-filter-options');
+        const tagFilterContainer = document.getElementById('problem-filter-options');
+        const problemListElement = document.getElementById('problem-list');
+        const detailsElement = document.getElementById('details');
+        const countElement = document.getElementById('count');
+
+        async function loadProblems() {
+            try {
+                const response = await fetch('question_details.json');
+                const rawData = await response.json();
+                allProblems = rawData.map(item => item.data || item);
+                problems = allProblems;
+                buildFilterData();
+                renderFilters();
+                applyFilters();
+            } catch (error) {
+                console.error('Error loading problems:', error);
+                problemListElement.innerHTML = '<li class="empty-state">Error loading problems. Check console for details.</li>';
+            }
+        }
+
+        function buildFilterData() {
+            const companySet = new Set();
+            const tagSet = new Set();
+
+            allProblems.forEach(problem => {
+                (problem.company_tags || []).forEach(tag => {
+                    if (tag && tag.name) {
+                        companySet.add(tag.name);
+                    }
+                });
+                (problem.tags || []).forEach(tag => {
+                    if (tag && tag.name) {
+                        tagSet.add(tag.name);
+                    }
+                });
+            });
+
+            companyOptions = Array.from(companySet)
+                .sort((a, b) => a.localeCompare(b))
+                .map(name => ({ label: name, value: name.toLowerCase() }));
+            problemTagOptions = Array.from(tagSet)
+                .sort((a, b) => a.localeCompare(b))
+                .map(name => ({ label: name, value: name.toLowerCase() }));
+        }
+
+        function renderFilters() {
+            renderFilterGroup(companyFilterContainer, companyOptions, activeCompanyFilters);
+            renderFilterGroup(tagFilterContainer, problemTagOptions, activeTagFilters);
+        }
+
+        function renderFilterGroup(container, options, activeSet) {
+            container.innerHTML = '';
+            if (!options.length) {
+                const empty = document.createElement('div');
+                empty.className = 'filter-empty';
+                empty.textContent = 'No data available';
+                container.appendChild(empty);
+                return;
+            }
+
+            options.forEach(option => {
+                const label = document.createElement('label');
+                label.className = 'filter-option';
+
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.value = option.value;
+                input.checked = activeSet.has(option.value);
+
+                input.addEventListener('change', event => {
+                    if (event.target.checked) {
+                        activeSet.add(option.value);
+                    } else {
+                        activeSet.delete(option.value);
+                    }
+                    applyFilters();
+                });
+
+                const text = document.createElement('span');
+                text.textContent = option.label;
+
+                label.appendChild(input);
+                label.appendChild(text);
+                container.appendChild(label);
+            });
+        }
+
+        function hasAll(selectedSet, itemSet) {
+            if (selectedSet.size === 0) {
+                return true;
+            }
+            if (!itemSet || itemSet.size === 0) {
+                return false;
+            }
+            for (const value of selectedSet) {
+                if (!itemSet.has(value)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function applyFilters() {
+            problems = allProblems.filter(problem => {
+                const title = (problem.title || '').toLowerCase();
+                const companyNames = new Set((problem.company_tags || []).map(tag => (tag.name || '').toLowerCase()));
+                const tagNames = new Set((problem.tags || []).map(tag => (tag.name || '').toLowerCase()));
+
+                const matchesSearch = !searchTerm ||
+                    title.includes(searchTerm) ||
+                    Array.from(companyNames).some(name => name.includes(searchTerm)) ||
+                    Array.from(tagNames).some(name => name.includes(searchTerm));
+
+                if (!matchesSearch) {
+                    return false;
+                }
+
+                if (!hasAll(activeCompanyFilters, companyNames)) {
+                    return false;
+                }
+
+                if (!hasAll(activeTagFilters, tagNames)) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            displayProblems();
+        }
+
+        function displayProblems() {
+            problemListElement.innerHTML = '';
+            countElement.textContent = problems.length;
+
+            if (!problems.length) {
+                const emptyItem = document.createElement('li');
+                emptyItem.className = 'empty-state';
+                emptyItem.textContent = 'No problems match your filters yet.';
+                problemListElement.appendChild(emptyItem);
+                detailsElement.classList.add('hidden');
+                return;
+            }
+
+            problems.forEach((problem, index) => {
+                const item = document.createElement('li');
+                item.className = 'problem-item';
+
+                const title = document.createElement('div');
+                title.className = 'problem-title';
+                title.textContent = problem.title || 'Unknown Problem';
+
+                const meta = document.createElement('div');
+                meta.className = 'problem-meta';
+
+                const levelBadge = document.createElement('span');
+                levelBadge.className = `badge ${getLevelClass(problem.level)}`;
+                levelBadge.textContent = getLevelLabel(problem.level);
+
+                const accepted = document.createElement('span');
+                accepted.textContent = `Accepted: ${problem.accepted_rate || 0}%`;
+
+                meta.appendChild(levelBadge);
+                meta.appendChild(accepted);
+
+                if (problem.company_tags && problem.company_tags.length) {
+                    const companies = document.createElement('span');
+                    companies.textContent = `Companies: ${problem.company_tags.slice(0, 3).map(tag => tag.name).join(', ')}`;
+                    meta.appendChild(companies);
+                }
+
+                item.appendChild(title);
+                item.appendChild(meta);
+
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('.problem-item').forEach(element => element.classList.remove('selected'));
+                    item.classList.add('selected');
+                    showDetails(index);
+                });
+
+                problemListElement.appendChild(item);
+            });
+        }
+
+        function getLevelLabel(level) {
+            const labels = ['', 'Easy', 'Medium', 'Hard', 'Super'];
+            return labels[level] || 'Medium';
+        }
+
+        function getLevelClass(level) {
+            const classes = ['', 'easy', 'medium', 'hard', 'hard'];
+            return classes[level] || 'medium';
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatNumber(value) {
+            return Number.isFinite(value) ? value.toLocaleString() : null;
+        }
+
+        function formatRichText(text) {
+            if (!text) {
+                return '';
+            }
+
+            const lines = String(text).replace(/\r\n/g, '\n').split('\n');
+            let html = '';
+            let buffer = [];
+            let inCode = false;
+            let inList = false;
+            let inOrderedList = false;
+            let inBlockquote = false;
+            let blockquoteLines = [];
+
+            const flushParagraph = () => {
+                if (!buffer.length) {
+                    return;
+                }
+                const paragraph = buffer
+                    .map(item => escapeHtml(item))
+                    .join('<br>')
+                    .trim();
+                if (paragraph) {
+                    html += `<p>${paragraph}</p>`;
+                }
+                buffer = [];
+            };
+
+            const closeUnordered = () => {
+                if (inList) {
+                    html += '</ul>';
+                    inList = false;
+                }
+            };
+
+            const closeOrdered = () => {
+                if (inOrderedList) {
+                    html += '</ol>';
+                    inOrderedList = false;
+                }
+            };
+
+            const flushBlockquote = () => {
+                if (!inBlockquote) {
+                    return;
+                }
+                const content = blockquoteLines
+                    .map(line => escapeHtml(line))
+                    .join('<br>');
+                html += `<blockquote>${content}</blockquote>`;
+                blockquoteLines = [];
+                inBlockquote = false;
+            };
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+
+                if (trimmed === '```') {
+                    flushParagraph();
+                    flushBlockquote();
+                    closeUnordered();
+                    closeOrdered();
+                    if (inCode) {
+                        html += '</code></pre>';
+                        inCode = false;
+                    } else {
+                        html += '<pre><code>';
+                        inCode = true;
+                    }
+                    return;
+                }
+
+                if (inCode) {
+                    html += `${escapeHtml(line)}\n`;
+                    return;
+                }
+
+                if (!trimmed) {
+                    flushParagraph();
+                    flushBlockquote();
+                    closeUnordered();
+                    closeOrdered();
+                    return;
+                }
+
+                if (/^>\s*/.test(trimmed)) {
+                    flushParagraph();
+                    closeUnordered();
+                    closeOrdered();
+                    if (!inBlockquote) {
+                        inBlockquote = true;
+                        blockquoteLines = [];
+                    }
+                    const content = line.replace(/^>\s*/, '');
+                    blockquoteLines.push(content);
+                    return;
+                }
+
+                flushBlockquote();
+
+                if (/^[-*]\s+/.test(trimmed)) {
+                    flushParagraph();
+                    closeOrdered();
+                    if (!inList) {
+                        html += '<ul>';
+                        inList = true;
+                    }
+                    html += `<li>${escapeHtml(trimmed.replace(/^[-*]\s+/, ''))}</li>`;
+                    return;
+                }
+
+                if (/^\d+\.\s+/.test(trimmed)) {
+                    flushParagraph();
+                    closeUnordered();
+                    if (!inOrderedList) {
+                        html += '<ol>';
+                        inOrderedList = true;
+                    }
+                    html += `<li>${escapeHtml(trimmed.replace(/^\d+\.\s+/, ''))}</li>`;
+                    return;
+                }
+
+                buffer.push(trimmed);
+            });
+
+            flushParagraph();
+            flushBlockquote();
+            closeUnordered();
+            closeOrdered();
+            if (inCode) {
+                html += '</code></pre>';
+            }
+            return html;
+        }
+
+        function hasRenderableContent(fragment) {
+            if (!fragment) {
+                return false;
+            }
+            const stripped = fragment.replace(/<[^>]*>/g, '').trim();
+            return Boolean(stripped) || fragment.includes('<pre');
+        }
+
+        function wrapSection(title, content, extraClass = '') {
+            if (!hasRenderableContent(content)) {
+                return '';
+            }
+            return `<section class="section-card ${extraClass}"><h3>${escapeHtml(title)}</h3>${content}</section>`;
+        }
+
+        function renderNotice(content) {
+            if (!hasRenderableContent(content)) {
+                return '';
+            }
+            return `
+                <section class="section-card info-card">
+                    <div class="info-layout">
+                        <div class="info-icon">i</div>
+                        <div class="info-text">${content}</div>
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderChipList(title, items) {
+            if (!items || !items.length) {
+                return '';
+            }
+            const chips = items
+                .filter(Boolean)
+                .map(value => `<span class="chip">${escapeHtml(value)}</span>`)
+                .join('');
+            return wrapSection(title, `<div class="chip-group">${chips}</div>`);
+        }
+
+        function renderCourses(courses) {
+            if (!courses || !courses.length) {
+                return '';
+            }
+            const content = courses
+                .map(course => {
+                    const title = escapeHtml(course.title || 'Recommended Resource');
+                    const highlight = course.highlight ? `<div class="course-highlight">${escapeHtml(course.highlight)}</div>` : '';
+                    return `<div class="course-card"><div class="course-title">${title}</div>${highlight}</div>`;
+                })
+                .join('');
+            return wrapSection('Related Knowledge', content);
+        }
+
+        function renderRelatedProblems(related) {
+            if (!related || !related.length) {
+                return '';
+            }
+            const items = related.map(item => {
+                const title = escapeHtml(item.title || 'Related Problem');
+                const linkTarget = item.unique_name ? encodeURIComponent(item.unique_name) : String(item.id || '');
+                const href = linkTarget ? `https://www.lintcode.com/problem/${linkTarget}/` : '#';
+                const meta = getLevelLabel(item.level || 0);
+                return `<div class="related-item"><a href="${href}" target="_blank" rel="noopener noreferrer">${title}</a><span>${escapeHtml(meta)}</span></div>`;
+            }).join('');
+            return wrapSection('Related Problems', `<div class="related-list">${items}</div>`);
+        }
+
+        function renderMetaStat(label, value) {
+            if (value === null || value === undefined || value === '') {
+                return '';
+            }
+            return `<div class="detail-stat"><div class="stat-label">${escapeHtml(label)}</div><div class="stat-value">${escapeHtml(value)}</div></div>`;
+        }
+
+        function renderMath(element, attempt = 0) {
+            if (!element) {
+                return;
+            }
+            if (!window.renderMathInElement) {
+                if (attempt < 30) {
+                    setTimeout(() => renderMath(element, attempt + 1), 100);
+                }
+                return;
+            }
+            window.renderMathInElement(element, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false },
+                    { left: '\\(', right: '\\)', display: false },
+                    { left: '\\[', right: '\\]', display: true }
+                ],
+                throwOnError: false
+            });
+        }
+
+        function showDetails(index) {
+            const problem = problems[index];
+            if (!problem) {
+                return;
+            }
+
+            const companyTags = (problem.company_tags || []).map(tag => tag && tag.name).filter(Boolean);
+            const problemTags = (problem.tags || []).map(tag => tag && tag.name).filter(Boolean);
+            const courses = (problem.recommend_courses || []).filter(course => course && (course.title || course.highlight));
+            const relatedProblems = (problem.related_problems || []).filter(item => item && (item.title || item.unique_name));
+
+            const descriptionHtml = formatRichText(problem.description);
+            const exampleHtml = formatRichText(problem.example || problem.examples || '');
+            const explanationHtml = formatRichText(problem.explanation);
+            const noticeHtml = formatRichText(problem.notice || problem.new_notice || '');
+            const challengeHtml = formatRichText(problem.challenge);
+            const clarificationHtml = formatRichText(problem.clarification);
+            const hintHtml = formatRichText(problem.hint);
+
+            const testcaseSample = problem.testcase_sample;
+            const testcaseSampleHtml = testcaseSample
+                ? `<pre><code>${escapeHtml(String(testcaseSample).trim())}</code></pre>`
+                : '';
+
+            const testdataSampleValue = Array.isArray(problem.testdata_sample)
+                ? problem.testdata_sample.map(item => `${item.type || 'value'}: ${item.value}`).join('\n')
+                : problem.testdata_sample;
+            const testdataSampleHtml = testdataSampleValue
+                ? `<pre><code>${escapeHtml(String(testdataSampleValue).trim())}</code></pre>`
+                : '';
+
+            const acceptedRateValue = Number.isFinite(problem.accepted_rate) ? `${problem.accepted_rate}%` : null;
+            const totalAccepted = formatNumber(problem.total_accepted);
+            const totalSubmissions = formatNumber(problem.total_submissions);
+
+            const sections = [
+                wrapSection('Description', descriptionHtml || '<p>No description available.</p>'),
+                renderNotice(noticeHtml),
+
+                wrapSection('Example', exampleHtml, 'example-card'),
+                wrapSection('Sample Testcase', testcaseSampleHtml),
+                wrapSection('Additional Sample', testdataSampleHtml),
+                wrapSection('Explanation', explanationHtml),
+                wrapSection('Clarification', clarificationHtml),
+                wrapSection('Hint', hintHtml),
+                wrapSection('Challenge', challengeHtml),
+                // renderCourses(courses),
+                renderChipList('Company Tags', companyTags),
+                renderChipList('Problem Tags', problemTags),
+                renderRelatedProblems(relatedProblems)
+            ].filter(Boolean).join('');
+
+            detailsElement.classList.remove('hidden');
+            detailsElement.innerHTML = `
+                <div class="detail-header">
+                    <div>
+                        <div class="detail-title">${problem.id ? `${escapeHtml(problem.id)} - ` : ''}${escapeHtml(problem.title || 'Unknown Problem')}</div>
+                        <div class="detail-subtitle">
+                            <span>${escapeHtml((problem.problem_type_tag && problem.problem_type_tag.name) || problem.problem_type_tag || 'Algorithms')}</span>
+                            ${problem.problem_type_tag_id ? `<span>ID: ${escapeHtml(problem.problem_type_tag_id)}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="detail-meta">
+                        <span class="badge ${getLevelClass(problem.level)}">${getLevelLabel(problem.level)}</span>
+                        ${renderMetaStat('Accepted Rate', acceptedRateValue)}
+                        ${totalSubmissions ? renderMetaStat('Submissions', totalSubmissions) : ''}
+                        ${totalAccepted ? renderMetaStat('Accepted', totalAccepted) : ''}
+                    </div>
+                </div>
+                <div class="detail-tabs">
+                    <span class="detail-tab active">Description</span>
+                    <span class="detail-tab">Solution</span>
+                    <span class="detail-tab">Notes</span>
+                    <span class="detail-tab">Discuss</span>
+                    <span class="detail-tab">Leaderboard</span>
+                    <span class="detail-tab">Record</span>
+                </div>
+                ${sections}
+            `;
+
+            setTimeout(() => renderMath(detailsElement), 0);
+        }
+
+        searchInput.addEventListener('input', event => {
+            searchTerm = event.target.value.trim().toLowerCase();
+            applyFilters();
+        });
+
+        clearFiltersButton.addEventListener('click', () => {
+            searchTerm = '';
+            searchInput.value = '';
+            activeCompanyFilters.clear();
+            activeTagFilters.clear();
+            renderFilters();
+            applyFilters();
+        });
+
+        loadProblems();
+    </script>
+</body>
+</html>
+

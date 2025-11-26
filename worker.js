@@ -1,4 +1,4 @@
-const BASE_PATH = "/locked-lintcode";
+const BASE_PATH = "/lintcode";
 
 export default {
   async fetch(request, env) {

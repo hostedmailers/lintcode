@@ -34,6 +34,16 @@
             font-size: 14px;
             background-color: #fff;
         }
+        .filter-select {
+            flex: 0 0 180px;
+            min-width: 160px;
+            padding: 10px 12px;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: #fff;
+            color: #1f2933;
+        }
         .clear-button {
             padding: 10px 14px;
             background-color: #eff6ff;
@@ -123,6 +133,8 @@
         .badge.easy { background-color: #dcfce7; color: #166534; }
         .badge.medium { background-color: #fef3c7; color: #92400e; }
         .badge.hard { background-color: #fee2e2; color: #b91c1c; }
+        .badge.status-locked { background-color: #e0e7ff; color: #4338ca; }
+        .badge.status-unlocked { background-color: #dcfce7; color: #166534; }
         .details {
             margin-top: 24px;
             padding: 28px;
@@ -355,6 +367,11 @@
         <h1>LintCode Locked Problems</h1>
         <div class="toolbar">
             <input type="text" id="search" class="search-box" placeholder="Search title, company, or tag">
+            <select id="lock-filter" class="filter-select">
+                <option value="all">All problems</option>
+                <option value="unlocked">Unlocked only</option>
+                <option value="locked">Locked only</option>
+            </select>
             <button type="button" id="clear-filters" class="clear-button">Reset Filters</button>
             <div style="color: #475569; font-size: 14px;">Total: <span id="count">0</span> problems</div>
         </div>
@@ -380,11 +397,13 @@
         let searchTerm = '';
         const activeCompanyFilters = new Set();
         const activeTagFilters = new Set();
+        let lockStatusFilter = 'all';
         let companyOptions = [];
         let problemTagOptions = [];
 
         const searchInput = document.getElementById('search');
         const clearFiltersButton = document.getElementById('clear-filters');
+        const lockFilterSelect = document.getElementById('lock-filter');
         const companyFilterContainer = document.getElementById('company-filter-options');
         const tagFilterContainer = document.getElementById('problem-filter-options');
         const problemListElement = document.getElementById('problem-list');
@@ -393,8 +412,28 @@
 
         async function loadProblems() {
             try {
-                const response = await fetch('question_details.json');
-                const rawData = await response.json();
+                const sources = [
+                    'all_question_details_unlocked.json',
+                    'question_details.json'
+                ];
+                let rawData = [];
+                for (const source of sources) {
+                    try {
+                        const response = await fetch(source);
+                        if (!response.ok) {
+                            continue;
+                        }
+                        rawData = await response.json();
+                        break;
+                    } catch (error) {
+                        console.warn('Unable to load', source, error);
+                    }
+                }
+
+                if (!Array.isArray(rawData) || !rawData.length) {
+                    throw new Error('No problem data available');
+                }
+
                 allProblems = rawData.map(item => item.data || item);
                 problems = allProblems;
                 buildFilterData();
@@ -411,16 +450,11 @@
             const tagSet = new Set();
 
             allProblems.forEach(problem => {
-                (problem.company_tags || []).forEach(tag => {
-                    if (tag && tag.name) {
-                        companySet.add(tag.name);
-                    }
-                });
-                (problem.tags || []).forEach(tag => {
-                    if (tag && tag.name) {
-                        tagSet.add(tag.name);
-                    }
-                });
+                const companyTags = getCompanyTags(problem);
+                companyTags.forEach(name => companySet.add(name));
+
+                const problemTags = getProblemTags(problem);
+                problemTags.forEach(name => tagSet.add(name));
             });
 
             companyOptions = Array.from(companySet)
@@ -490,9 +524,10 @@
 
         function applyFilters() {
             problems = allProblems.filter(problem => {
-                const title = (problem.title || '').toLowerCase();
-                const companyNames = new Set((problem.company_tags || []).map(tag => (tag.name || '').toLowerCase()));
-                const tagNames = new Set((problem.tags || []).map(tag => (tag.name || '').toLowerCase()));
+                const title = (getProblemTitle(problem) || '').toLowerCase();
+                const companyNames = new Set(getCompanyTags(problem).map(tag => tag.toLowerCase()));
+                const tagNames = new Set(getProblemTags(problem).map(tag => tag.toLowerCase()));
+                const isLocked = Boolean(problem.is_locked);
 
                 const matchesSearch = !searchTerm ||
                     title.includes(searchTerm) ||
@@ -508,6 +543,14 @@
                 }
 
                 if (!hasAll(activeTagFilters, tagNames)) {
+                    return false;
+                }
+
+                if (lockStatusFilter === 'locked' && !isLocked) {
+                    return false;
+                }
+
+                if (lockStatusFilter === 'unlocked' && isLocked) {
                     return false;
                 }
 
@@ -536,7 +579,7 @@
 
                 const title = document.createElement('div');
                 title.className = 'problem-title';
-                title.textContent = problem.title || 'Unknown Problem';
+                title.textContent = getProblemTitle(problem);
 
                 const meta = document.createElement('div');
                 meta.className = 'problem-meta';
@@ -551,9 +594,16 @@
                 meta.appendChild(levelBadge);
                 meta.appendChild(accepted);
 
-                if (problem.company_tags && problem.company_tags.length) {
+                const statusBadge = document.createElement('span');
+                const locked = Boolean(problem.is_locked);
+                statusBadge.className = `badge ${locked ? 'status-locked' : 'status-unlocked'}`;
+                statusBadge.textContent = locked ? 'Locked' : 'Unlocked';
+                meta.appendChild(statusBadge);
+
+                const companyTags = getCompanyTags(problem);
+                if (companyTags.length) {
                     const companies = document.createElement('span');
-                    companies.textContent = `Companies: ${problem.company_tags.slice(0, 3).map(tag => tag.name).join(', ')}`;
+                    companies.textContent = `Companies: ${companyTags.slice(0, 3).join(', ')}`;
                     meta.appendChild(companies);
                 }
 
@@ -858,6 +908,7 @@
             const acceptedRateValue = Number.isFinite(problem.accepted_rate) ? `${problem.accepted_rate}%` : null;
             const totalAccepted = formatNumber(problem.total_accepted);
             const totalSubmissions = formatNumber(problem.total_submissions);
+            const locked = Boolean(problem.is_locked);
 
             const sections = [
                 wrapSection('Description', descriptionHtml || '<p>No description available.</p>'),
@@ -880,7 +931,7 @@
             detailsElement.innerHTML = `
                 <div class="detail-header">
                     <div>
-                        <div class="detail-title">${problem.id ? `${escapeHtml(problem.id)} - ` : ''}${escapeHtml(problem.title || 'Unknown Problem')}</div>
+                        <div class="detail-title">${problem.id ? `${escapeHtml(problem.id)} - ` : ''}${escapeHtml(getProblemTitle(problem))}</div>
                         <div class="detail-subtitle">
                             <span>${escapeHtml((problem.problem_type_tag && problem.problem_type_tag.name) || problem.problem_type_tag || 'Algorithms')}</span>
                             ${problem.problem_type_tag_id ? `<span>ID: ${escapeHtml(problem.problem_type_tag_id)}</span>` : ''}
@@ -888,6 +939,7 @@
                     </div>
                     <div class="detail-meta">
                         <span class="badge ${getLevelClass(problem.level)}">${getLevelLabel(problem.level)}</span>
+                        <span class="badge ${locked ? 'status-locked' : 'status-unlocked'}">${locked ? 'Locked' : 'Unlocked'}</span>
                         ${renderMetaStat('Accepted Rate', acceptedRateValue)}
                         ${totalSubmissions ? renderMetaStat('Submissions', totalSubmissions) : ''}
                         ${totalAccepted ? renderMetaStat('Accepted', totalAccepted) : ''}
@@ -912,14 +964,39 @@
             applyFilters();
         });
 
+        lockFilterSelect.addEventListener('change', event => {
+            lockStatusFilter = event.target.value;
+            applyFilters();
+        });
+
         clearFiltersButton.addEventListener('click', () => {
             searchTerm = '';
             searchInput.value = '';
             activeCompanyFilters.clear();
             activeTagFilters.clear();
+            lockStatusFilter = 'all';
+            lockFilterSelect.value = 'all';
             renderFilters();
             applyFilters();
         });
+
+        function getCompanyTags(problem) {
+            const raw = problem.company_tags || problem.companyTags || [];
+            return raw
+                .map(tag => (typeof tag === 'string' ? tag : (tag && (tag.name || tag.title)) || ''))
+                .filter(Boolean);
+        }
+
+        function getProblemTags(problem) {
+            const raw = problem.problem_tags || problem.tags || [];
+            return raw
+                .map(tag => (typeof tag === 'string' ? tag : (tag && (tag.name || tag.title)) || ''))
+                .filter(Boolean);
+        }
+
+        function getProblemTitle(problem) {
+            return problem.title || problem.en_title || problem.name || 'Unknown Problem';
+        }
 
         loadProblems();
     </script>

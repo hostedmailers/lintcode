@@ -9,6 +9,11 @@ window.addEventListener('DOMContentLoaded', function() {
     var shareLinkField = document.querySelector('.js-share-link');
     var charboxTemplate = document.querySelector('#charbox-template');
     var defaultTitle = document.querySelector("title").innerText;
+    var normalizedPath = location.pathname.replace(/index\.html$/i, '');
+    if (!normalizedPath.endsWith('/')) {
+        normalizedPath += '/';
+    }
+    var baseUrl = location.origin + normalizedPath;
 
     var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -24,8 +29,14 @@ window.addEventListener('DOMContentLoaded', function() {
 
     function updateFragment(text) {
         // Don't spam the browser history & strip query strings.
-        window.location.replace(location.origin + '/#' + encodeURIComponent(text));
-        shareLinkField.value = location.origin + '/' + location.hash;
+        var encoded = encodeURIComponent(text);
+        var url = encoded ? baseUrl + '#' + encoded : baseUrl;
+        if (history.replaceState) {
+            history.replaceState(null, '', url);
+        } else {
+            window.location.replace(url);
+        }
+        shareLinkField.value = url;
     }
 
     function updateTitle(text) {

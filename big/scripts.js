@@ -31,9 +31,7 @@ window.addEventListener('DOMContentLoaded', function() {
         // Don't spam the browser history & strip query strings.
         var encoded = encodeURIComponent(text);
         var url = encoded ? baseUrl + '#' + encoded : baseUrl;
-        if (history.replaceState) {
-            history.replaceState(null, '', url);
-        } else {
+        if (window.location.href !== url) {
             window.location.replace(url);
         }
         shareLinkField.value = url;

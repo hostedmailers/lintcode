@@ -414,23 +414,27 @@
             try {
                 const sources = [
                     'all_question_details_unlocked.json',
-                    'question_details.json'
+                    'question_details_unlocked.json',
+                    'question_details.json',
+                    'locked_problems_filtered.json'
                 ];
-                let rawData = [];
+                const rawData = [];
                 for (const source of sources) {
                     try {
-                        const response = await fetch(source);
+                        const response = await fetch(source, { cache: 'no-store' });
                         if (!response.ok) {
                             continue;
                         }
-                        rawData = await response.json();
-                        break;
+                        const data = await response.json();
+                        if (Array.isArray(data)) {
+                            rawData.push(...data);
+                        }
                     } catch (error) {
                         console.warn('Unable to load', source, error);
                     }
                 }
 
-                if (!Array.isArray(rawData) || !rawData.length) {
+                if (!rawData.length) {
                     throw new Error('No problem data available');
                 }
 

@@ -9,11 +9,7 @@ window.addEventListener('DOMContentLoaded', function() {
     var shareLinkField = document.querySelector('.js-share-link');
     var charboxTemplate = document.querySelector('#charbox-template');
     var defaultTitle = document.querySelector("title").innerText;
-    var normalizedPath = location.pathname.replace(/index\.html$/i, '');
-    if (!normalizedPath.endsWith('/')) {
-        normalizedPath += '/';
-    }
-    var baseUrl = location.origin + normalizedPath;
+    var baseUrl = location.origin + location.pathname.replace(/index\.html$/i, '');
 
     var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -30,11 +26,21 @@ window.addEventListener('DOMContentLoaded', function() {
     function updateFragment(text) {
         // Don't spam the browser history & strip query strings.
         var encoded = encodeURIComponent(text);
-        var url = encoded ? baseUrl + '#' + encoded : baseUrl;
-        if (window.location.href !== url) {
-            window.location.replace(url);
+        var hash = encoded ? '#' + encoded : '';
+
+        if (hash) {
+            if (location.hash !== hash) {
+                location.hash = encoded;
+            }
+        } else if (location.hash) {
+            if (history.replaceState) {
+                history.replaceState(null, '', baseUrl);
+            } else {
+                location.hash = '';
+            }
         }
-        shareLinkField.value = url;
+
+        shareLinkField.value = baseUrl + hash;
     }
 
     function updateTitle(text) {

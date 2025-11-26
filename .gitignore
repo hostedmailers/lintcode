@@ -2,3 +2,4 @@
 all_problems.json
 question_details_unlocked.json
 failed_problem_ids.json
+.DS_Store

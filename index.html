@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LintCode Problems Viewer</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <style>
@@ -89,11 +92,90 @@
             padding: 4px 2px;
             color: #1f2933;
         }
-        .filter-option input { accent-color: #2563eb; }
+        .filter-option-text {
+            flex: 1 1 auto;
+        }
         .filter-empty {
             font-size: 13px;
             color: #6b7280;
             padding: 4px 0;
+        }
+        .checkbox-wrapper-4 * { box-sizing: border-box; }
+        .checkbox-wrapper-4 {
+            display: inline-flex;
+            align-items: center;
+        }
+        .checkbox-wrapper-4 .inp-cbx {
+            position: absolute;
+            visibility: hidden;
+        }
+        .checkbox-wrapper-4 .cbx {
+            -webkit-user-select: none;
+            user-select: none;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 6px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .checkbox-wrapper-4 .cbx:hover {
+            background: rgba(0, 119, 255, 0.06);
+        }
+        .checkbox-wrapper-4 .cbx span {
+            display: inline-flex;
+            align-items: center;
+        }
+        .checkbox-wrapper-4 .cbx span:first-child {
+            position: relative;
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            border: 1px solid #cccfdb;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 1px rgba(0, 16, 75, 0.05);
+            justify-content: center;
+        }
+        .checkbox-wrapper-4 .cbx span:first-child svg {
+            position: absolute;
+            top: 3px;
+            left: 2px;
+            fill: none;
+            stroke: #fff;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 16px;
+            stroke-dashoffset: 16px;
+            transition: all 0.3s ease;
+            transition-delay: 0.1s;
+        }
+        .checkbox-wrapper-4 .cbx span:last-child {
+            line-height: 18px;
+            font-size: 13px;
+        }
+        .checkbox-wrapper-4 .cbx:hover span:first-child {
+            border-color: #0077ff;
+        }
+        .checkbox-wrapper-4 .inp-cbx:checked + .cbx span:first-child {
+            background: #0077ff;
+            border-color: #0077ff;
+            animation: wave-4 0.4s ease;
+        }
+        .checkbox-wrapper-4 .inp-cbx:checked + .cbx span:first-child svg {
+            stroke-dashoffset: 0;
+        }
+        .checkbox-inline-symbols {
+            position: absolute;
+            width: 0;
+            height: 0;
+            pointer-events: none;
+            user-select: none;
+        }
+        @keyframes wave-4 {
+            50% { transform: scale(0.9); }
         }
         .layout { display: grid; gap: 24px; }
         .problem-list {
@@ -364,7 +446,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>LintCode Locked Problems</h1>
+        <h1>LintCode Premium Problems</h1>
         <div class="toolbar">
             <input type="text" id="search" class="search-box" placeholder="Search title, company, or tag">
             <select id="lock-filter" class="filter-select">
@@ -400,6 +482,8 @@
         let lockStatusFilter = 'all';
         let companyOptions = [];
         let problemTagOptions = [];
+        const checkSymbolId = 'filter-check-symbol';
+        let checkSymbolInjected = false;
 
         const searchInput = document.getElementById('search');
         const clearFiltersButton = document.getElementById('clear-filters');
@@ -491,6 +575,7 @@
 
         function renderFilterGroup(container, options, activeSet) {
             container.innerHTML = '';
+            ensureCheckSymbol();
             if (!options.length) {
                 const empty = document.createElement('div');
                 empty.className = 'filter-empty';
@@ -499,13 +584,20 @@
                 return;
             }
 
-            options.forEach(option => {
-                const label = document.createElement('label');
-                label.className = 'filter-option';
+            options.forEach((option, index) => {
+                const row = document.createElement('div');
+                row.className = 'filter-option';
+
+                const checkboxWrapper = document.createElement('div');
+                checkboxWrapper.className = 'checkbox-wrapper-4';
 
                 const input = document.createElement('input');
                 input.type = 'checkbox';
+                input.className = 'inp-cbx';
                 input.value = option.value;
+                const sanitizedValue = String(option.value).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                const inputId = `${container.id || 'filter'}-${sanitizedValue}-${index}`;
+                input.id = inputId;
                 input.checked = activeSet.has(option.value);
 
                 input.addEventListener('change', event => {
@@ -517,13 +609,50 @@
                     applyFilters();
                 });
 
-                const text = document.createElement('span');
-                text.textContent = option.label;
+                const label = document.createElement('label');
+                label.className = 'cbx';
+                label.setAttribute('for', inputId);
 
-                label.appendChild(input);
-                label.appendChild(text);
-                container.appendChild(label);
+                const iconSpan = document.createElement('span');
+                iconSpan.innerHTML = `<svg width="12" height="10"><use href="#${checkSymbolId}" xlink:href="#${checkSymbolId}"></use></svg>`;
+
+                const textSpan = document.createElement('span');
+                textSpan.textContent = option.label;
+
+                label.appendChild(iconSpan);
+                label.appendChild(textSpan);
+
+                checkboxWrapper.appendChild(input);
+                checkboxWrapper.appendChild(label);
+
+                row.appendChild(checkboxWrapper);
+                container.appendChild(row);
             });
+        }
+
+        function ensureCheckSymbol() {
+            if (checkSymbolInjected) {
+                return;
+            }
+            const existing = document.getElementById(checkSymbolId);
+            if (existing) {
+                checkSymbolInjected = true;
+                return;
+            }
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.classList.add('checkbox-inline-symbols');
+            svg.setAttribute('aria-hidden', 'true');
+            svg.setAttribute('focusable', 'false');
+            const symbol = document.createElementNS('http://www.w3.org/2000/svg', 'symbol');
+            symbol.setAttribute('id', checkSymbolId);
+            symbol.setAttribute('viewBox', '0 0 12 10');
+            const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+            polyline.setAttribute('points', '1.5 6 4.5 9 10.5 1');
+            polyline.setAttribute('fill', 'none');
+            symbol.appendChild(polyline);
+            svg.appendChild(symbol);
+            document.body.appendChild(svg);
+            checkSymbolInjected = true;
         }
 
         function hasAll(selectedSet, itemSet) {

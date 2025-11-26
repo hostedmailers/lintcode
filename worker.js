@@ -1,18 +1,39 @@
-const BASE_PATH = "/lintcode";
+const ROUTES = [
+  { prefix: "/lintcode", assetBase: "" },
+  { prefix: "/big", assetBase: "/big" }
+];
 
 export default {
   async fetch(request, env) {
     const originalUrl = new URL(request.url);
 
-    if (!originalUrl.pathname.startsWith(BASE_PATH)) {
-      return new Response("Not found", { status: 404 });
+    for (const route of ROUTES) {
+      if (!matchesPrefix(originalUrl.pathname, route.prefix)) {
+        continue;
+      }
+
+      const rewrittenUrl = new URL(originalUrl);
+      const subPath = normalizeSubPath(originalUrl.pathname.substring(route.prefix.length));
+      rewrittenUrl.pathname = `${route.assetBase}${subPath}` || "/";
+
+      const assetRequest = new Request(rewrittenUrl.toString(), request);
+      return env.ASSETS.fetch(assetRequest);
     }
 
-    const rewrittenUrl = new URL(originalUrl);
-    const strippedPath = originalUrl.pathname.substring(BASE_PATH.length) || "/";
-    rewrittenUrl.pathname = strippedPath;
-
-    const assetRequest = new Request(rewrittenUrl.toString(), request);
-    return env.ASSETS.fetch(assetRequest);
+    return new Response("Not found", { status: 404 });
   }
 };
+
+function matchesPrefix(pathname, prefix) {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+function normalizeSubPath(subPath) {
+  if (!subPath) {
+    return "/";
+  }
+  if (subPath.startsWith("/")) {
+    return subPath;
+  }
+  return `/${subPath}`;
+}

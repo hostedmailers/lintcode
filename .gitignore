@@ -1,0 +1,4 @@
+# Ignore large scraped datasets and artifacts
+all_problems.json
+question_details_unlocked.json
+failed_problem_ids.json

@@ -434,7 +434,20 @@
                     throw new Error('No problem data available');
                 }
 
-                allProblems = rawData.map(item => item.data || item);
+                const seenIds = new Set();
+                allProblems = rawData
+                    .map(normalizeProblem)
+                    .filter(problem => {
+                        const uniqueId = problem.id || problem.problem_id || problem.en_title || problem.title;
+                        if (!uniqueId) {
+                            return true;
+                        }
+                        if (seenIds.has(uniqueId)) {
+                            return false;
+                        }
+                        seenIds.add(uniqueId);
+                        return true;
+                    });
                 problems = allProblems;
                 buildFilterData();
                 renderFilters();
@@ -996,6 +1009,27 @@
 
         function getProblemTitle(problem) {
             return problem.title || problem.en_title || problem.name || 'Unknown Problem';
+        }
+
+        function normalizeProblem(item) {
+            if (!item || typeof item !== 'object') {
+                return {};
+            }
+            const merged = { ...item };
+            if (item.data && typeof item.data === 'object') {
+                Object.assign(merged, item.data);
+            }
+            delete merged.data;
+            if (typeof merged.is_locked === 'undefined' && typeof item.is_locked !== 'undefined') {
+                merged.is_locked = item.is_locked;
+            }
+            if (!merged.company_tags && item.company_tags) {
+                merged.company_tags = item.company_tags;
+            }
+            if (!merged.problem_tags && item.problem_tags) {
+                merged.problem_tags = item.problem_tags;
+            }
+            return merged;
         }
 
         loadProblems();

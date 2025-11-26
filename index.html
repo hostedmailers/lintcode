@@ -438,20 +438,22 @@
                     throw new Error('No problem data available');
                 }
 
-                const seenIds = new Set();
-                allProblems = rawData
+                const problemsByKey = new Map();
+                const normalizedProblems = rawData
                     .map(normalizeProblem)
-                    .filter(problem => {
-                        const uniqueId = problem.id || problem.problem_id || problem.en_title || problem.title;
-                        if (!uniqueId) {
-                            return true;
-                        }
-                        if (seenIds.has(uniqueId)) {
-                            return false;
-                        }
-                        seenIds.add(uniqueId);
-                        return true;
-                    });
+                    .filter(problem => Object.keys(problem).length);
+
+                normalizedProblems.forEach(problem => {
+                    const key = getProblemKey(problem);
+                    if (!key) {
+                        return;
+                    }
+                    const existing = problemsByKey.get(key);
+                    const merged = existing ? mergeProblems(existing, problem) : { ...problem };
+                    problemsByKey.set(key, merged);
+                });
+
+                allProblems = Array.from(problemsByKey.values());
                 problems = allProblems;
                 buildFilterData();
                 renderFilters();
@@ -1034,6 +1036,75 @@
                 merged.problem_tags = item.problem_tags;
             }
             return merged;
+        }
+
+        function getProblemKey(problem) {
+            return problem.id || problem.problem_id || problem.unique_name || problem.en_title || problem.title || null;
+        }
+
+        function mergeProblems(base, incoming) {
+            const merged = { ...base };
+            for (const [key, value] of Object.entries(incoming)) {
+                if (value === undefined || value === null) {
+                    continue;
+                }
+                if (key === 'is_locked') {
+                    if (value === true || typeof merged.is_locked === 'undefined') {
+                        merged.is_locked = Boolean(value);
+                    }
+                    continue;
+                }
+                if (Array.isArray(value)) {
+                    const existing = Array.isArray(merged[key]) ? merged[key] : [];
+                    merged[key] = mergeArray(existing, value);
+                    continue;
+                }
+                if (isPlainObject(value)) {
+                    const existing = isPlainObject(merged[key]) ? merged[key] : {};
+                    merged[key] = mergeObject(existing, value);
+                    continue;
+                }
+                if (merged[key] === undefined || merged[key] === null || merged[key] === '') {
+                    merged[key] = value;
+                }
+            }
+            return merged;
+        }
+
+        function mergeArray(existing, incoming) {
+            const result = [...existing];
+            const seen = new Set(existing.map(value => JSON.stringify(value)));
+            incoming.forEach(value => {
+                const signature = JSON.stringify(value);
+                if (!seen.has(signature)) {
+                    seen.add(signature);
+                    result.push(value);
+                }
+            });
+            return result;
+        }
+
+        function mergeObject(existing, incoming) {
+            const result = { ...existing };
+            for (const [key, value] of Object.entries(incoming)) {
+                if (value === undefined || value === null) {
+                    continue;
+                }
+                if (Array.isArray(value)) {
+                    const existingArray = Array.isArray(result[key]) ? result[key] : [];
+                    result[key] = mergeArray(existingArray, value);
+                } else if (isPlainObject(value)) {
+                    const existingObject = isPlainObject(result[key]) ? result[key] : {};
+                    result[key] = mergeObject(existingObject, value);
+                } else if (result[key] === undefined || result[key] === null || result[key] === '') {
+                    result[key] = value;
+                }
+            }
+            return result;
+        }
+
+        function isPlainObject(value) {
+            return Object.prototype.toString.call(value) === '[object Object]';
         }
 
         loadProblems();

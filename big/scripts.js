@@ -33,11 +33,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 location.hash = encoded;
             }
         } else if (location.hash) {
-            if (history.replaceState) {
-                history.replaceState(null, '', baseUrl);
-            } else {
-                location.hash = '';
-            }
+            location.hash = '';
         }
 
         shareLinkField.value = baseUrl + hash;

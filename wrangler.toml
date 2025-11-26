@@ -3,6 +3,7 @@ main = "worker.js"
 compatibility_date = "2025-11-25"
 
 [assets]
+binding = "ASSETS"
 directory = "."
 exclude = [
   "**/*.py",

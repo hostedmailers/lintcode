@@ -1,5 +1,5 @@
 const ROUTES = [
-  { prefix: "/lintcode", assetBase: "" },
+  { prefix: "/lintcode", assetBase: "/lintcode" },
   { prefix: "/big", assetBase: "/big" }
 ];
 
@@ -20,7 +20,7 @@ export default {
       return env.ASSETS.fetch(assetRequest);
     }
 
-    return new Response("Not found", { status: 404 });
+    return env.ASSETS.fetch(request);
   }
 };
 
